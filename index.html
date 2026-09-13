@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>靈墨命盤 - 十二生肖生年天干地支命理精算</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ink: {
+                            50: '#F5F2EC',   // 熟宣紙白
+                            100: '#E8E2D5',
+                            200: '#D5CBB9',  // 淡墨渲染
+                            300: '#B5A895',
+                            600: '#5C5449',
+                            800: '#1C1A17',  // 松煙濃墨
+                            900: '#111315',  // 墨池深黑
+                            950: '#090A0C',
+                        },
+                        cinnabar: {
+                            400: '#EE5A65',
+                            500: '#C0353F', // 經典朱砂紅
+                            600: '#9E242D',
+                        },
+                        wuxing: {
+                            gold: '#D4AF37',
+                            wood: '#2E6F40',
+                            water: '#1E3A5F',
+                            fire: '#C0353F',
+                            earth: '#8B5A2B',
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['"Noto Serif TC"', '"Songti TC"', '"標楷體"', 'serif'],
+                        sans: ['"PingFang TC"', '"Microsoft JhengHei"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- Chart.js for radar chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .ink-splash {
+            background: radial-gradient(circle, rgba(28,26,23,0.08) 0%, rgba(255,255,255,0) 75%);
+        }
+        .dark .ink-splash {
+            background: radial-gradient(circle, rgba(232,226,213,0.06) 0%, rgba(17,19,21,0) 75%);
+        }
+        .paper-texture {
+            background-color: #F5F2EC;
+            background-image: radial-gradient(#1c1a17 0.4px, transparent 0.4px), radial-gradient(#1c1a17 0.4px, #F5F2EC 0.4px);
+            background-size: 24px 24px;
+            background-position: 0 0, 12px 12px;
+        }
+        .dark .paper-texture {
+            background-color: #111315;
+            background-image: radial-gradient(#ffffff 0.4px, transparent 0.4px), radial-gradient(#ffffff 0.4px, #111315 0.4px);
+        }
+        .seal-border {
+            border: 2px solid #C0353F;
+            box-shadow: inset 0 0 0 2px #C0353F;
+        }
+        .vertical-text {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+        }
+        ::-webkit-scrollbar {
+            width: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #B5A895;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #2D333B;
+        }
+    </style>
+</head>
+<body class="bg-ink-50 dark:bg-ink-900 text-ink-800 dark:text-ink-50 font-sans transition-colors duration-300 min-h-screen flex flex-col paper-texture selection:bg-cinnabar-500 selection:text-white">
+
+    <!-- 置頂 Header 導覽列 -->
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-ink-50/85 dark:bg-ink-900/85 border-b border-ink-200 dark:border-ink-800 transition-colors shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-sm bg-cinnabar-500 text-white flex items-center justify-center font-serif text-xl font-bold shadow-md tracking-tighter seal-border border-white/40">
+                    印
+                </div>
+                <div>
+                    <span class="font-serif text-2xl font-black tracking-widest block leading-none">靈墨命盤</span>
+                    <span class="text-xs text-ink-600 dark:text-ink-300 tracking-widest mt-0.5 block">天干地支．五行生肖精算</span>
+                </div>
+            </div>
+
+            <nav class="hidden md:flex items-center gap-8 font-serif text-sm font-semibold tracking-wider">
+                <a href="#hero" class="hover:text-cinnabar-500 transition-colors">命盤首頁</a>
+                <a href="#calculator" class="hover:text-cinnabar-500 transition-colors">生年排盤</a>
+                <a href="#features" class="hover:text-cinnabar-500 transition-colors">五行解析</a>
+                <a href="#zodiac-gallery" class="hover:text-cinnabar-500 transition-colors">十二生肖圖譜</a>
+            </nav>
+
+            <div class="flex items-center gap-4">
+                <button id="themeToggle" class="p-2 rounded-full hover:bg-ink-200 dark:hover:bg-ink-800 transition-colors focus:outline-none" aria-label="切換主題">
+                    <svg id="sunIcon" class="w-6 h-6 hidden dark:block text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <svg id="moonIcon" class="w-6 h-6 block dark:hidden text-ink-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+                <a href="#calculator" class="bg-cinnabar-500 hover:bg-cinnabar-600 text-white font-serif px-5 py-2 rounded shadow-md transition-all text-sm tracking-widest flex items-center gap-1">
+                    <span>即刻排盤</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero 區塊 -->
+    <section id="hero" class="relative py-20 lg:py-28 overflow-hidden">
+        <div class="absolute inset-0 ink-splash pointer-events-none"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid lg:grid-cols-12 gap-12 items-center">
+                <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cinnabar-500/30 text-cinnabar-500 bg-cinnabar-500/5 text-xs font-serif tracking-widest">
+                        <span class="w-2 h-2 rounded-full bg-cinnabar-500 animate-ping"></span>
+                        水墨新中式．天干地支生年大數據精算
+                    </div>
+                    <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-wide">
+                        觀歲次干支 <br/>
+                        <span class="text-cinnabar-500">洞察生肖命盤</span> 之奧妙
+                    </h1>
+                    <p class="text-ink-600 dark:text-ink-300 text-lg sm:text-xl font-light leading-relaxed max-w-2xl mx-auto lg:mx-0">
+                        融合傳統六十甲子納音與五行氣場，輸入您的出生年份，瞬間為您凝墨成盤，剖析事業、財運、情感與命理吉凶。
+                    </p>
+                    <div class="pt-4 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        <a href="#calculator" class="bg-ink-800 hover:bg-ink-950 dark:bg-ink-50 dark:hover:bg-white dark:text-ink-900 text-white font-serif px-8 py-3.5 rounded shadow-lg transition-all tracking-widest text-center">
+                            免費開始推算
+                        </a>
+                        <a href="#zodiac-gallery" class="border border-ink-300 dark:border-ink-700 hover:border-cinnabar-500 font-serif px-8 py-3.5 rounded transition-all tracking-widest text-center">
+                            瀏覽十二生肖
+                        </a>
+                    </div>
+                </div>
+                <!-- 視覺太極生肖徽章 -->
+                <div class="lg:col-span-5 flex justify-center">
+                    <div class="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center">
+                        <div class="absolute inset-0 rounded-full border-2 border-dashed border-ink-300 dark:border-ink-700 animate-[spin_60s_linear_infinite]"></div>
+                        <div class="absolute inset-4 rounded-full border border-cinnabar-500/30"></div>
+                        <div class="w-48 h-48 rounded-full bg-ink-800 dark:bg-ink-100 text-ink-50 dark:text-ink-900 flex flex-col items-center justify-center font-serif shadow-2xl relative overflow-hidden text-center">
+                            <span class="text-4xl font-black tracking-widest mb-1">乾坤</span>
+                            <span class="text-xs text-ink-300 dark:text-ink-600 tracking-widest">陰陽對應</span>
+                            <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-cinnabar-500/20 rounded-full blur-xl"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 互動查詢與排盤計算器區塊 -->
+    <section id="calculator" class="py-16 bg-ink-100/50 dark:bg-ink-950/40 border-y border-ink-200 dark:border-ink-800">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-12">
+                <h2 class="font-serif text-3xl sm:text-4xl font-bold tracking-widest">命盤生年精算</h2>
+                <div class="w-12 h-1 bg-cinnabar-500 mx-auto my-4"></div>
+                <p class="text-ink-600 dark:text-ink-300 text-sm">請選取或輸入公元年份（西元 1800 - 2100），系統將根據陰陽天干地支自動推算納音五行。</p>
+            </div>
+
+            <!-- 控制面板 -->
+            <div class="bg-white dark:bg-ink-800 rounded-xl p-6 sm:p-10 shadow-xl border border-ink-200 dark:border-ink-700">
+                <form id="calcForm" class="space-y-6" onsubmit="return false;">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 items-end">
+                        <div class="sm:col-span-2">
+                            <label for="birthYear" class="block font-serif text-sm font-semibold mb-2">出生年份 (西元年)</label>
+                            <div class="relative">
+                                <input type="number" id="birthYear" min="1800" max="2100" value="1995" 
+                                    class="w-full px-4 py-3 rounded border border-ink-300 dark:border-ink-600 bg-ink-50 dark:bg-ink-900 text-ink-800 dark:text-ink-100 text-lg focus:outline-none focus:ring-2 focus:ring-cinnabar-500 font-mono transition-colors" placeholder="例如：1995">
+                                <span class="absolute right-4 top-3.5 text-sm text-ink-600 dark:text-ink-300 font-serif">年</span>
+                            </div>
+                            <p id="yearError" class="text-xs text-cinnabar-500 mt-1 hidden font-serif">請輸入 1800 至 2100 之間的有效西元年份。</p>
+                        </div>
+                        <div>
+                            <button type="button" id="calcBtn" class="w-full bg-cinnabar-500 hover:bg-cinnabar-600 text-white font-serif py-3 px-6 rounded shadow transition-all tracking-widest text-lg flex items-center justify-center gap-2">
+                                <span>推算命盤</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 快速選擇生肖按鈕 -->
+                    <div>
+                        <span class="block text-xs font-serif text-ink-600 dark:text-ink-300 mb-3">或點擊生肖快速代入近年代數：</span>
+                        <div class="grid grid-cols-6 sm:grid-cols-12 gap-2" id="zodiacQuickBar">
+                            <!-- JS 動態生成生肖微型選單 -->
+                        </div>
+                    </div>
+                </form>
+
+                <!-- 排盤結果呈現區塊 -->
+                <div id="resultContainer" class="mt-10 pt-10 border-t border-ink-200 dark:border-ink-700 hidden">
+                    
+                    <!-- 命盤頭部印籤卡 -->
+                    <div class="bg-ink-50 dark:bg-ink-900 p-6 rounded-lg border border-ink-200 dark:border-ink-700 relative overflow-hidden mb-8">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-cinnabar-500/10 rounded-full pointer-events-none"></div>
+                        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div class="flex items-center gap-6">
+                                <div id="resIcon" class="w-20 h-20 rounded-full bg-ink-800 dark:bg-ink-100 text-ink-50 dark:text-ink-900 flex items-center justify-center font-serif text-4xl font-bold shadow border-2 border-cinnabar-500/30">
+                                    豬
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-3 flex-wrap">
+                                        <h3 id="resYearTitle" class="font-serif text-2xl font-bold">1995 乙亥年</h3>
+                                        <span id="resWuxingBadge" class="px-3 py-1 rounded text-xs font-serif text-white bg-cinnabar-500 shadow-sm">山頭火命</span>
+                                    </div>
+                                    <p id="resGanzhiSub" class="text-sm text-ink-600 dark:text-ink-300 mt-1 font-serif">天干：乙 (陰木) ｜ 地支：亥 (陰水) ｜ 生肖：豬</p>
+                                </div>
+                            </div>
+                            <div class="seal-border p-3 text-center min-w-[130px] bg-white dark:bg-ink-800 shadow-sm">
+                                <span class="block text-xs text-cinnabar-500 font-serif font-semibold">命格評定</span>
+                                <span id="resRating" class="font-serif text-xl font-bold text-cinnabar-500">上上籤</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 命盤核心三大剖析 + 數據雷達圖 -->
+                    <div class="grid lg:grid-cols-12 gap-8">
+                        
+                        <!-- 數據視覺化雷達圖 -->
+                        <div class="lg:col-span-5 bg-ink-50 dark:bg-ink-900 p-6 rounded-lg border border-ink-200 dark:border-ink-700 flex flex-col justify-between">
+                            <h4 class="font-serif font-bold text-base mb-4 text-center tracking-widest">五行能量氣場評量</h4>
+                            <div class="relative w-full h-64 flex items-center justify-center">
+                                <canvas id="wuxingChart"></canvas>
+                            </div>
+                            <div id="wuxingAnalysisText" class="mt-4 text-xs text-ink-600 dark:text-ink-300 leading-relaxed font-serif bg-white dark:bg-ink-800 p-3 rounded border border-ink-200 dark:border-ink-700">
+                                <!-- 動態填入五行強弱評語 -->
+                            </div>
+                        </div>
+
+                        <!-- 運勢詳細條目 -->
+                        <div class="lg:col-span-7 space-y-4">
+                            <!-- 事業格局 -->
+                            <div class="bg-ink-50 dark:bg-ink-900 p-5 rounded-lg border-l-4 border-cinnabar-500">
+                                <h5 class="font-serif font-bold text-lg mb-1 flex items-center gap-2">
+                                    <span>💼</span> 事業格局與職涯
+                                </h5>
+                                <p id="resCareer" class="text-sm text-ink-600 dark:text-ink-300 leading-relaxed font-serif">
+                                    加載中...
+                                </p>
+                            </div>
+
+                            <!-- 財帛運勢 -->
+                            <div class="bg-ink-50 dark:bg-ink-900 p-5 rounded-lg border-l-4 border-amber-600">
+                                <h5 class="font-serif font-bold text-lg mb-1 flex items-center gap-2">
+                                    <span>💰</span> 財帛積聚與投資
+                                </h5>
+                                <p id="resWealth" class="text-sm text-ink-600 dark:text-ink-300 leading-relaxed font-serif">
+                                    加載中...
+                                </p>
+                            </div>
+
+                            <!-- 姻緣情感 -->
+                            <div class="bg-ink-50 dark:bg-ink-900 p-5 rounded-lg border-l-4 border-rose-500">
+                                <h5 class="font-serif font-bold text-lg mb-1 flex items-center gap-2">
+                                    <span>🌸</span> 姻緣桃花與人際
+                                </h5>
+                                <p id="resLove" class="text-sm text-ink-600 dark:text-ink-300 leading-relaxed font-serif">
+                                    加載中...
+                                </p>
+                            </div>
+
+                            <!-- 開運建議 -->
+                            <div class="bg-ink-50 dark:bg-ink-900 p-5 rounded-lg border-l-4 border-emerald-600">
+                                <h5 class="font-serif font-bold text-lg mb-1 flex items-center gap-2">
+                                    <span>☯️</span> 歲次開運與貴人
+                                </h5>
+                                <p id="resAdvice" class="text-sm text-ink-600 dark:text-ink-300 leading-relaxed font-serif">
+                                    加載中...
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 特色功能區塊 -->
+    <section id="features" class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-2xl mx-auto mb-16">
+            <h2 class="font-serif text-3xl sm:text-4xl font-bold tracking-widest">水墨命理系統特色</h2>
+            <div class="w-12 h-1 bg-cinnabar-500 mx-auto my-4"></div>
+            <p class="text-ink-600 dark:text-ink-300 text-sm">結合古籍經典算法與現代互動設計，打造極致沉浸式的古風體驗</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-white dark:bg-ink-800 p-8 rounded-xl border border-ink-200 dark:border-ink-700 shadow-sm hover:shadow-md transition-all group">
+                <div class="w-14 h-14 rounded-full bg-cinnabar-500/10 text-cinnabar-500 flex items-center justify-center font-serif text-2xl font-bold mb-6 group-hover:scale-110 transition-transform">
+                    音
+                </div>
+                <h3 class="font-serif text-xl font-bold mb-3">六十甲子納音精算</h3>
+                <p class="text-ink-600 dark:text-ink-300 text-sm leading-relaxed font-serif">
+                    不單僅看生肖，更深入天干地支搭配組合出的三十種納音五行（如海中金、山頭火），精準定位先天稟賦。
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-ink-800 p-8 rounded-xl border border-ink-200 dark:border-ink-700 shadow-sm hover:shadow-md transition-all group">
+                <div class="w-14 h-14 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center font-serif text-2xl font-bold mb-6 group-hover:scale-110 transition-transform">
+                    圖
+                </div>
+                <h3 class="font-serif text-xl font-bold mb-3">五行能量動態圖譜</h3>
+                <p class="text-ink-600 dark:text-ink-300 text-sm leading-relaxed font-serif">
+                    導入即時雷達圖表（Radar Chart），直觀量化金、木、水、火、土之氣場平衡度，一目了然自身優劣勢。
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-ink-800 p-8 rounded-xl border border-ink-200 dark:border-ink-700 shadow-sm hover:shadow-md transition-all group">
+                <div class="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-serif text-2xl font-bold mb-6 group-hover:scale-110 transition-transform">
+                    解
+                </div>
+                <h3 class="font-serif text-xl font-bold mb-3">生活開運與貴人指引</h3>
+                <p class="text-ink-600 dark:text-ink-300 text-sm leading-relaxed font-serif">
+                    根據干支合沖原理，為您計算三合、六合貴人生肖，並提供幸運方位、顏色與歲次避坑指南。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 十二生肖圖譜展示區 -->
+    <section id="zodiac-gallery" class="py-16 bg-ink-100/30 dark:bg-ink-950/20 border-t border-ink-200 dark:border-ink-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-12">
+                <h2 class="font-serif text-3xl font-bold tracking-widest">十二生肖命相圖譜</h2>
+                <div class="w-12 h-1 bg-cinnabar-500 mx-auto my-4"></div>
+                <p class="text-ink-600 dark:text-ink-300 text-sm">點擊任意生肖，即刻帶入預設年份檢視命盤細節</p>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" id="zodiacCardsGrid">
+                <!-- JS 動態生成 12 生肖展示卡片 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Call To Action 區塊 -->
+    <section class="py-20 bg-ink-800 text-ink-50 dark:bg-ink-950 relative overflow-hidden">
+        <div class="absolute inset-0 ink-splash opacity-20 pointer-events-none"></div>
+        <div class="max-w-5xl mx-auto px-4 text-center relative z-10 space-y-6">
+            <h2 class="font-serif text-3xl sm:text-4xl font-bold tracking-widest">尋玄妙之理，定歲月之舟</h2>
+            <p class="text-ink-300 text-base max-w-xl mx-auto font-light font-serif">
+                無論是探索個人運勢，或為親友排算生年命盤，靈墨命盤隨時為您提供古典水墨視覺與精準天干地支解析。
+            </p>
+            <div class="pt-4">
+                <a href="#calculator" class="bg-cinnabar-500 hover:bg-cinnabar-600 text-white font-serif px-10 py-4 rounded shadow-2xl transition-all tracking-widest text-lg inline-block">
+                    立即進行生年查詢
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer 頁尾 -->
+    <footer class="bg-ink-900 text-ink-300 py-12 border-t border-ink-800 font-serif text-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-sm bg-cinnabar-500 text-white flex items-center justify-center font-bold text-xs seal-border border-white/40">印</div>
+                <span class="text-lg font-bold text-white tracking-widest">靈墨命盤</span>
+            </div>
+            <p class="text-xs text-ink-600">
+                &copy; 2026 靈墨命盤 (Modern Ink Wash Horoscope). 本網站內容僅供民俗傳統文化研究與娛樂參考。
+            </p>
+            <div class="flex gap-6 text-xs text-ink-300">
+                <a href="#hero" class="hover:text-white transition-colors">返回頂部</a>
+                <a href="#calculator" class="hover:text-white transition-colors">命盤排盤</a>
+                <a href="#features" class="hover:text-white transition-colors">五行說明</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript 業務邏輯與數據庫 -->
+    <script>
+        const TIANGAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+        const DIZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+        const ZODIACS = ["鼠", "牛", "虎", "兔", "龍", "蛇", "馬", "羊", "猴", "雞", "狗", "豬"];
+        
+        const NAYIN_TABLE = {
+            "甲子": "海中金", "乙丑": "海中金", "丙寅": "爐中火", "丁卯": "爐中火", "戊辰": "大林木", "己巳": "大林木",
+            "庚午": "路旁土", "辛未": "路旁土", "壬申": "劍鋒金", "癸酉": "劍鋒金", "甲戌": "山頭火", "乙亥": "山頭火",
+            "丙子": "澗下水", "丁丑": "澗下水", "戊寅": "城頭土", "己卯": "城頭土", "庚辰": "白蠟金", "辛巳": "白蠟金",
+            "壬午": "楊柳木", "癸未": "楊柳木", "甲申": "井泉水", "乙酉": "井泉水", "丙戌": "屋上土", "丁亥": "屋上土",
+            "戊子": "霹靂火", "己丑": "霹靂火", "庚寅": "松柏木", "辛卯": "松柏木", "壬辰": "長流水", "癸巳": "長流水",
+            "甲午": "沙中金", "乙未": "沙中金", "丙申": "山下火", "丁酉": "山下火", "戊戌": "平地木", "己亥": "平地木",
+            "庚子": "壁上土", "辛丑": "壁上土", "壬寅": "金箔金", "癸卯": "金箔金", "甲辰": "覆燈火", "乙巳": "覆燈火",
+            "丙午": "天河水", "丁未": "天河水", "戊申": "大驛土", "己酉": "大驛土", "庚戌": "釵釧金", "辛亥": "釵釧金",
+            "壬子": "桑柘木", "癸丑": "桑柘木", "甲寅": "大溪水", "乙卯": "大溪水", "丙辰": "沙中土", "丁巳": "沙中土",
+            "戊午": "天上火", "己未": "天上火", "庚申": "石榴木", "辛酉": "石榴木", "壬戌": "大海水", "癸亥": "大海水"
+        };
+
+        const ZODIAC_DETAILS = {
+            "鼠": { defaultYear: 1996, desc: "機智敏捷，觀察力強，深諳應變之道。" },
+            "牛": { defaultYear: 1997, desc: "踏實穩重，耐力驚人，責任感極強。" },
+            "虎": { defaultYear: 1998, desc: "勇敢果斷，具領導氣概，敢於開創新局。" },
+            "兔": { defaultYear: 1999, desc: "溫和心思細膩，具藝術審美與協調力。" },
+            "龍": { defaultYear: 2000, desc: "志向遠大，充滿活力，帶有強烈自信與威嚴。" },
+            "蛇": { defaultYear: 2001, desc: "智慧深邃，直覺敏銳，作風冷靜而精準。" },
+            "馬": { defaultYear: 2002, desc: "熱情奔放，嚮往自由，行動力極為迅捷。" },
+            "羊": { defaultYear: 2003, desc: "寬厚仁慈，富同理心，具包容之美德。" },
+            "猴": { defaultYear: 2004, desc: "靈巧多智，反應極快，充滿好奇心。" },
+            "雞": { defaultYear: 2005, desc: "勤奮守時，表現力強，注重細節與完美。" },
+            "狗": { defaultYear: 2006, desc: "忠誠正直，重視義氣，具強烈正義感。" },
+            "豬": { defaultYear: 1995, desc: "隨和真誠，福氣深厚，具包容與豁達之心。" }
+        };
+
+        let myChart = null;
+
+        function calculateGanzhi(year) {
+            const offset = year - 4;
+            const ganIdx = (offset % 10 + 10) % 10;
+            const zhiIdx = (offset % 12 + 12) % 12;
+
+            const gan = TIANGAN[ganIdx];
+            const zhi = DIZHI[zhiIdx];
+            const zodiac = ZODIACS[zhiIdx];
+            const ganzhiKey = gan + zhi;
+            const nayin = NAYIN_TABLE[ganzhiKey] || "未知納音";
+
+            return { gan, zhi, zodiac, ganzhiKey, nayin, ganIdx, zhiIdx };
+        }
+
+        function generateWuxingScores(ganIdx, zhiIdx) {
+            const baseGold = ((ganIdx * 7 + zhiIdx * 3) % 45) + 50;
+            const baseWood = ((ganIdx * 3 + zhiIdx * 5) % 45) + 50;
+            const baseWater = ((ganIdx * 9 + zhiIdx * 2) % 45) + 50;
+            const baseFire = ((ganIdx * 4 + zhiIdx * 8) % 45) + 50;
+            const baseEarth = ((ganIdx * 2 + zhiIdx * 6) % 45) + 50;
+            return [baseGold, baseWood, baseWater, baseFire, baseEarth];
+        }
+
+        function renderRadarChart(scores) {
+            const canvas = document.getElementById('wuxingChart');
+            const ctx = canvas.getContext('2d');
+            
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(235, 226, 213, 0.2)' : 'rgba(28, 26, 23, 0.15)';
+            const textColor = isDark ? '#E8E2D5' : '#1C1A17';
+
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['金 (義)', '木 (仁)', '水 (智)', '火 (禮)', '土 (信)'],
+                    datasets: [{
+                        label: '五行氣場強度',
+                        data: scores,
+                        backgroundColor: 'rgba(192, 53, 63, 0.25)',
+                        borderColor: '#C0353F',
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#C0353F',
+                        pointBorderColor: '#fff',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: gridColor },
+                            grid: { color: gridColor },
+                            pointLabels: {
+                                color: textColor,
+                                font: { family: 'Noto Serif TC', size: 12, weight: 'bold' }
+                            },
+                            ticks: { display: false, max: 100, min: 0 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function runAstrologyCalculation(year) {
+            const info = calculateGanzhi(year);
+            const scores = generateWuxingScores(info.ganIdx, info.zhiIdx);
+
+            document.getElementById('resIcon').innerText = info.zodiac;
+            document.getElementById('resYearTitle').innerText = `${year}年 ${info.ganzhiKey}年`;
+            document.getElementById('resGanzhiSub').innerText = `天干：${info.gan} ｜ 地支：${info.zhi} ｜ 生肖屬：${info.zodiac}`;
+            
+            const badge = document.getElementById('resWuxingBadge');
+            badge.innerText = `${info.nayin}命`;
+
+            const ratings = ["特等吉籤", "上上籤", "中吉籤", "歲月平安籤"];
+            const ratingChoice = ratings[(year * 7) % ratings.length];
+            document.getElementById('resRating').innerText = ratingChoice;
+
+            document.getElementById('resCareer').innerText = 
+                `生逢${info.ganzhiKey}年，納音屬${info.nayin}。在事業發展上呈現「厚積薄發」之象。天干【${info.gan}】給予您敏銳的直覺與決策力，適合在團隊中擔任決策或創意核心。若能多發揮生肖屬【${info.zodiac}】特有的韌性，中年後大有可為。`;
+
+            document.getElementById('resWealth').innerText = 
+                `財帛宮受五行氣場調理，正財運勢穩健增長。適宜投資實體或具備長期價值的領域。須注意歲次逢沖之年（如偏財波動大時），宜守不宜攻，避免過度槓桿操作即可保財庫豐盈。`;
+
+            document.getElementById('resLove').innerText = 
+                `感情性格重情重義，待人真誠。屬【${info.zodiac}】者在人際交往中極具吸引力。單身者容易在文藝、學術或工作場合遇見良緣；已有伴侶者宜多加溝通，互相包容，家庭和睦即是最大幸運。`;
+
+            document.getElementById('resAdvice').innerText = 
+                `幸運貴人生肖：與屬【${ZODIACS[(info.zhiIdx + 4) % 12]}】及屬【${ZODIACS[(info.zhiIdx + 8) % 12]}】者為三合貴人。日常可多配戴或接近木質/石材類飾品，助增個人磁場能量。`;
+
+            const maxWuxingIdx = scores.indexOf(Math.max(...scores));
+            const wuxingNames = ['金', '木', '水', '火', '土'];
+            document.getElementById('wuxingAnalysisText').innerText = 
+                `【氣場診斷】您本命氣場中以「${wuxingNames[maxWuxingIdx]}」元素最為充沛，代表您在相關氣質上表現突出。宜適度補足相對較弱之五行以達中庸和諧。`;
+
+            const container = document.getElementById('resultContainer');
+            container.classList.remove('hidden');
+
+            renderRadarChart(scores);
+        }
+
+        function handleCalculation() {
+            const input = document.getElementById('birthYear');
+            const err = document.getElementById('yearError');
+            const yr = parseInt(input.value, 10);
+
+            if (yr && yr >= 1800 && yr <= 2100) {
+                err.classList.add('hidden');
+                runAstrologyCalculation(yr);
+                document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const quickBar = document.getElementById('zodiacQuickBar');
+            ZODIACS.forEach(z => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'px-2 py-1 text-xs border border-ink-300 dark:border-ink-700 rounded hover:bg-cinnabar-500 hover:text-white dark:hover:bg-cinnabar-500 transition-colors font-serif';
+                btn.innerText = z;
+                btn.addEventListener('click', () => {
+                    const defaultY = ZODIAC_DETAILS[z].defaultYear;
+                    document.getElementById('birthYear').value = defaultY;
+                    document.getElementById('yearError').classList.add('hidden');
+                    runAstrologyCalculation(defaultY);
+                    document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+                quickBar.appendChild(btn);
+            });
+
+            const galleryGrid = document.getElementById('zodiacCardsGrid');
+            ZODIACS.forEach(z => {
+                const item = ZODIAC_DETAILS[z];
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-ink-800 p-4 rounded-lg border border-ink-200 dark:border-ink-700 text-center hover:border-cinnabar-500 cursor-pointer transition-all shadow-sm group';
+                card.innerHTML = `
+                    <div class="w-12 h-12 rounded-full mx-auto bg-ink-100 dark:bg-ink-900 text-ink-800 dark:text-ink-100 flex items-center justify-center font-serif text-xl font-bold mb-2 group-hover:bg-cinnabar-500 group-hover:text-white transition-colors border border-ink-200 dark:border-ink-700">
+                        ${z}
+                    </div>
+                    <h4 class="font-serif font-bold text-sm mb-1">${z}年生人</h4>
+                    <p class="text-xs text-ink-600 dark:text-ink-300 font-serif line-clamp-2">${item.desc}</p>
+                `;
+                card.addEventListener('click', () => {
+                    document.getElementById('birthYear').value = item.defaultYear;
+                    document.getElementById('yearError').classList.add('hidden');
+                    document.getElementById('calculator').scrollIntoView({ behavior: 'smooth' });
+                    runAstrologyCalculation(item.defaultYear);
+                });
+                galleryGrid.appendChild(card);
+            });
+
+            document.getElementById('calcBtn').addEventListener('click', handleCalculation);
+
+            document.getElementById('birthYear').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleCalculation();
+                }
+            });
+
+            const themeToggleBtn = document.getElementById('themeToggle');
+            themeToggleBtn.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                const yr = parseInt(document.getElementById('birthYear').value, 10);
+                if (yr && !document.getElementById('resultContainer').classList.contains('hidden')) {
+                    const info = calculateGanzhi(yr);
+                    const scores = generateWuxingScores(info.ganIdx, info.zhiIdx);
+                    renderRadarChart(scores);
+                }
+            });
+
+            runAstrologyCalculation(1995);
+        });
+    </script>
+</body>
+</html>
